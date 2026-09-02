@@ -1,0 +1,17 @@
+# PlatformIO
+.pio/
+.pioenvs/
+.piolibdeps/
+
+# Editors / IDE
+.vscode/
+.idea/
+*.code-workspace
+
+# Local machine configuration (serial port, etc.)
+*.local.json
+*.local.ini
+
+# OS cruft
+Thumbs.db
+desktop.ini
