@@ -1,0 +1,6 @@
+# Host CLI runtime dependency.
+pyserial>=3.5
+
+# Development and build tooling.
+pytest>=8.0
+platformio>=6.1
