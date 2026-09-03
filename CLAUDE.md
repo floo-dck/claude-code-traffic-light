@@ -78,8 +78,11 @@ character over serial → firmware.
   `settings.json.bak` first and refuses to touch an unparseable file.
 - `firmware/src/main.cpp` — `R`/`Y`/`G`/`O` set the LEDs and answer `OK <c>`;
   `?` answers `STATE <c>`; anything else answers `ERR`. Boot sweeps R/Y/G for
-  200 ms each. The onboard LED (GPIO2) blinks once per accepted command, which
-  is the verification signal before any LED is wired.
+  200 ms each. The onboard LED (GPIO2) carries the same three states through
+  timing, since one monochrome LED cannot show a colour: R solid, Y blinking
+  at 150 ms, G an 80 ms heartbeat every 2 s, O off. Every accepted command
+  restarts the pattern phase, so a repeat of the current state is visible too
+  — that is the verification signal before any LED is wired.
 
 Hook mapping (in `install_hooks.HOOK_EVENTS`): SessionStart → idle,
 UserPromptSubmit → working, Notification → blocked, Stop → idle, SessionEnd →
