@@ -52,6 +52,14 @@ one monochrome LED cannot show a colour: red is solid, yellow blinks every
 150 ms, green is an 80 ms heartbeat every 2 s. That makes the whole chain
 verifiable before a single external LED is wired up.
 
+One thing is deliberately not clean. The principle is that the board is a dumb
+slave and every decision about meaning lives on the host — but the *blink
+patterns* of the onboard LED are decided in the firmware, because the host
+sends one character per state and nothing else. Moving the patterns to the host
+would mean a richer protocol on the wire and more work in a code path that must
+never fail. Keeping the protocol at one character was judged worth more than
+the purity.
+
 ## ⚙️ Setup
 
 1. Create the venv and install the host dependencies:
@@ -110,6 +118,14 @@ To remove the hooks again:
 .venv\Scripts\python.exe host\install_hooks.py --uninstall
 ```
 
+## 🖥️ Platforms
+
+Developed and verified on Windows. The host tests also run on Linux in CI, so
+the pure-Python half is known to work there. The serial path on Linux and macOS
+is **untested** — port detection goes through `pyserial` by USB vendor and
+product ID, which is portable by construction, but nobody has run it against a
+board on either system.
+
 ## 🧪 Development
 
 ```bash
@@ -118,7 +134,7 @@ To remove the hooks again:
 
 Tests never touch real hardware or the real settings file. The design, its
 open hardware questions and its rejected alternatives are in
-[docs/superpowers/specs](docs/superpowers/specs/2026-09-02-claude-status-led-design.md).
+[docs/design](docs/design/2026-09-02-claude-status-led-design.md).
 
 ## 📄 Licence
 

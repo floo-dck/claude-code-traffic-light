@@ -114,10 +114,13 @@ until the turn ends.
 
 ## Docs
 
-`docs/superpowers/specs/2026-09-02-claude-status-led-design.md` is the design
-of record — read it before changing behaviour. Section 14 tracks hardware
+Design documents live in `docs/design/`, newest last.
+`docs/design/2026-09-02-claude-status-led-design.md` is the design of record —
+read it before changing behaviour. Section 14 tracks hardware
 questions to answer empirically, 15 the known limitations, 16 the rejected
 alternatives (local daemon, Wi-Fi/HTTP, MicroPython, ESPHome, WS2812) so they
-are not relitigated. `docs/wiring.md` has the schematic (GPIO25/26/27, 220 Ω
+are not relitigated. `docs/design/2026-09-03-public-release-design.md` covers
+the public release: licence, name, build-time pin configuration, CI.
+`docs/wiring.md` has the schematic (GPIO25/26/27, 220 Ω
 each, active high). `TODO.md` holds the items that need a human at the
 keyboard.
