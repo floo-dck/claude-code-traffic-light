@@ -7,13 +7,7 @@
 
 #include <Arduino.h>
 
-// LEDs are wired active high, each through a series resistor to ground.
-#define PIN_RED 25
-#define PIN_YELLOW 26
-#define PIN_GREEN 27
-
-// Not every board exposes an onboard LED on this pin; set to -1 to disable.
-#define PIN_ONBOARD 2
+#include "pins.h"
 
 static const unsigned long BOOT_STEP_MS = 200;
 
@@ -26,6 +20,16 @@ static const unsigned long ONBOARD_IDLE_PERIOD_MS = 2000;
 
 static char currentState = 'O';
 static unsigned long patternStartedAt = 0;
+
+// Applies LED_ACTIVE_LOW. The onboard LED is deliberately not routed through
+// here: it has its own polarity and its own disable switch.
+static void writeLed(int pin, bool on) {
+#if LED_ACTIVE_LOW
+  digitalWrite(pin, on ? LOW : HIGH);
+#else
+  digitalWrite(pin, on ? HIGH : LOW);
+#endif
+}
 
 // Drives the onboard LED from the current state and the time since the
 // pattern started. Called every loop, never blocks, and unsigned arithmetic
@@ -54,9 +58,9 @@ static void serviceOnboard() {
 }
 
 static void showState(char state) {
-  digitalWrite(PIN_RED, state == 'R' ? HIGH : LOW);
-  digitalWrite(PIN_YELLOW, state == 'Y' ? HIGH : LOW);
-  digitalWrite(PIN_GREEN, state == 'G' ? HIGH : LOW);
+  writeLed(PIN_RED, state == 'R');
+  writeLed(PIN_YELLOW, state == 'Y');
+  writeLed(PIN_GREEN, state == 'G');
   currentState = state;
   // Restarting the phase on every command makes a repeat of the state the
   // board is already in visible too, which is the verification signal for a
