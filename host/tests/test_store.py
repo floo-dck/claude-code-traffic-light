@@ -106,7 +106,7 @@ def test_a_safe_session_id_is_kept_recognisable():
 
 
 def test_a_dangerous_session_id_is_hashed():
-    for hostile in ["../../etc/passwd", "C:\evil", "with space", "", None, "x" * 200]:
+    for hostile in ["../../etc/passwd", "C:\\evil", "with space", "", None, "x" * 200]:
         safe = store.sanitise_session_id(hostile)
         assert safe.startswith("h")
         assert "/" not in safe and "\\" not in safe and " " not in safe

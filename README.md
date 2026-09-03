@@ -1,5 +1,7 @@
 # 🚦 claude-code-traffic-light
 
+[![CI](https://github.com/floo-dck/claude-code-traffic-light/actions/workflows/ci.yml/badge.svg)](https://github.com/floo-dck/claude-code-traffic-light/actions/workflows/ci.yml)
+
 A traffic-light status indicator for Claude Code, driven by an ESP32 over USB
 serial. Three LEDs mirror what the agent is doing, so you can tell at a glance
 whether it is still working, waiting on you, or done.
