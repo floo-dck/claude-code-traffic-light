@@ -1,4 +1,4 @@
-# 🚦 claude-status-led
+# 🚦 claude-code-traffic-light
 
 A traffic-light status indicator for Claude Code, driven by an ESP32 over USB
 serial. Three LEDs mirror what the agent is doing, so you can tell at a glance
@@ -16,12 +16,12 @@ whether it is still working, waiting on you, or done.
 ```
  Claude Code hooks            host CLI
 ┌──────────────┐  hook JSON  ┌───────────────────┐
-│ SessionStart │  on stdin   │ claude_status_led │
-│ UserPrompt   │ ──────────▶ │  .py set / clear  │
+│ SessionStart │  on stdin   │ traffic_light.py  │
+│ UserPrompt   │ ──────────▶ │    set / clear    │
 │ Notification │             └─────────┬─────────┘
 │ Stop         │                       │ one file per session
 │ SessionEnd   │                       ▼
-└──────────────┘   %LOCALAPPDATA%\claude-status-led\sessions\
+└──────────────┘   %LOCALAPPDATA%\claude-code-traffic-light\sessions\
                                        │
                                        ▼
                              ┌───────────────────┐
@@ -77,7 +77,7 @@ verifiable before a single external LED is wired up.
    .venv\Scripts\python.exe host\install_hooks.py
    ```
 
-   Only entries that mention `claude_status_led.py` are touched, so unrelated
+   Only entries that mention `traffic_light.py` are touched, so unrelated
    hooks survive. Re-running is safe, and is how you repoint the hooks after
    moving the repo.
 
@@ -89,8 +89,8 @@ Wiring (GPIO25/26/27, 220 Ω each, active high) is in
 ## 🔍 Checking it
 
 ```bash
-.venv\Scripts\python.exe host\claude_status_led.py selftest   # drive all colours
-.venv\Scripts\python.exe host\claude_status_led.py status     # what should be lit, and why
+.venv\Scripts\python.exe host\traffic_light.py selftest   # drive all colours
+.venv\Scripts\python.exe host\traffic_light.py status     # what should be lit, and why
 ```
 
 ### Nothing lights up
@@ -99,7 +99,7 @@ Wiring (GPIO25/26/27, 220 Ω each, active high) is in
 - Watch the onboard LED (GPIO2). If it follows the states, the host half works
   and the problem is in the wiring.
 - Hook errors are never printed to the terminal — a hook must not interrupt
-  you — so they go to `%LOCALAPPDATA%\claude-status-led\led.log`.
+  you — so they go to `%LOCALAPPDATA%\claude-code-traffic-light\led.log`.
 - Moved the repo? The hooks hold absolute paths. Re-run `install_hooks.py`.
 
 To remove the hooks again:

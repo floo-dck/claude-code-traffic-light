@@ -2,7 +2,7 @@
 
 import pytest
 
-from statusled.aggregate import (
+from trafficlight.aggregate import (
     COMMAND_GREEN,
     COMMAND_OFF,
     COMMAND_RED,

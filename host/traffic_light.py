@@ -13,15 +13,15 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
-from statusled import config, store, transport
-from statusled.aggregate import VALID_STATES, aggregate
+from trafficlight import config, store, transport
+from trafficlight.aggregate import VALID_STATES, aggregate
 
 LOG_MAX_BYTES = 256 * 1024
 
 
 def build_parser():
     parser = argparse.ArgumentParser(
-        prog="claude_status_led.py", description=__doc__.splitlines()[0]
+        prog="traffic_light.py", description=__doc__.splitlines()[0]
     )
     sub = parser.add_subparsers(dest="command", required=True)
 

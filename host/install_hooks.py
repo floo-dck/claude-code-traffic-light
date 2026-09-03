@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Register the claude-status-led hooks in Claude Code's settings.
+"""Register the claude-code-traffic-light hooks in Claude Code's settings.
 
 The merge is deliberately surgical: only entries whose command mentions this
 CLI are touched, so unrelated hooks and every other setting survive. The
@@ -16,7 +16,7 @@ import tempfile
 from pathlib import Path
 
 # How an entry is recognised as ours, both for replacing and for uninstalling.
-MARKER = "claude_status_led.py"
+MARKER = "traffic_light.py"
 
 # The mapping from spec section 8. There is deliberately no per-tool-call hook:
 # the cost is a process launch per tool use, and the only symptom of leaving it
@@ -106,7 +106,7 @@ def _default_paths():
     repo_root = Path(__file__).resolve().parent.parent
     return (
         str(repo_root / ".venv" / "Scripts" / "python.exe"),
-        str(repo_root / "host" / "claude_status_led.py"),
+        str(repo_root / "host" / "traffic_light.py"),
     )
 
 

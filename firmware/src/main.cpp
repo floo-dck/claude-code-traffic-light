@@ -1,4 +1,4 @@
-// claude-status-led firmware
+// claude-code-traffic-light firmware
 //
 // A dumb slave: it maps single-character commands arriving over USB serial
 // onto three LEDs and knows nothing about Claude Code. Every decision about
@@ -102,7 +102,7 @@ void setup() {
   }
   showState('O');
 
-  Serial.println("READY claude-status-led");
+  Serial.println("READY claude-code-traffic-light");
 }
 
 void loop() {

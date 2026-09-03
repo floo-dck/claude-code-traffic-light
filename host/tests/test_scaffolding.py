@@ -2,11 +2,11 @@
 
 import serial
 
-import statusled
+import trafficlight
 
 
 def test_package_is_importable():
-    assert statusled.__doc__
+    assert trafficlight.__doc__
 
 
 def test_pyserial_is_available():

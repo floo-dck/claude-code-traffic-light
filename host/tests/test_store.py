@@ -4,7 +4,7 @@ tests cover partial files, stale files and hostile session ids."""
 import json
 from datetime import datetime, timedelta, timezone
 
-from statusled import store
+from trafficlight import store
 
 NOW = datetime(2026, 9, 2, 12, 0, 0, tzinfo=timezone.utc)
 

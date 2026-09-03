@@ -17,7 +17,7 @@ DEFAULTS = {
 
 # Set this to redirect every path below. Used by the tests, and handy for
 # running two independent instances.
-HOME_ENV_VAR = "CLAUDE_STATUS_LED_HOME"
+HOME_ENV_VAR = "CLAUDE_TRAFFIC_LIGHT_HOME"
 
 
 def data_dir():
@@ -26,7 +26,7 @@ def data_dir():
     if override:
         return Path(override)
     local = os.environ.get("LOCALAPPDATA") or os.path.expanduser("~")
-    return Path(local) / "claude-status-led"
+    return Path(local) / "claude-code-traffic-light"
 
 
 def sessions_dir():

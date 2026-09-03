@@ -6,7 +6,7 @@ import json
 import install_hooks
 
 PYTHON = "C:/repo/.venv/Scripts/python.exe"
-CLI = "C:/repo/host/claude_status_led.py"
+CLI = "C:/repo/host/traffic_light.py"
 
 # A faithful copy of the shape of the real settings file.
 EXISTING = {
@@ -83,7 +83,7 @@ def test_reinstalling_from_a_moved_repository_replaces_the_old_path():
     # The old entry has to name the CLI, because that name is the marker by
     # which an entry is recognised as ours.
     once = install_hooks.merge_hooks(
-        {}, "C:/old/.venv/python.exe", "C:/old/host/claude_status_led.py"
+        {}, "C:/old/.venv/python.exe", "C:/old/host/traffic_light.py"
     )
     twice = install_hooks.merge_hooks(once, PYTHON, CLI)
     commands = _commands(twice, "Stop")

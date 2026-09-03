@@ -3,7 +3,7 @@ crashes on a typo in config.json would break Claude Code."""
 
 import json
 
-from statusled import config
+from trafficlight import config
 
 
 def test_defaults_apply_when_the_file_is_missing(tmp_path):
@@ -52,7 +52,7 @@ def test_a_non_positive_staleness_window_is_replaced(tmp_path):
 
 
 def test_the_home_override_redirects_every_path(tmp_path, monkeypatch):
-    monkeypatch.setenv("CLAUDE_STATUS_LED_HOME", str(tmp_path))
+    monkeypatch.setenv("CLAUDE_TRAFFIC_LIGHT_HOME", str(tmp_path))
     assert config.data_dir() == tmp_path
     assert config.sessions_dir() == tmp_path / "sessions"
     assert config.config_path() == tmp_path / "config.json"
@@ -60,6 +60,6 @@ def test_the_home_override_redirects_every_path(tmp_path, monkeypatch):
 
 
 def test_localappdata_is_used_when_there_is_no_override(tmp_path, monkeypatch):
-    monkeypatch.delenv("CLAUDE_STATUS_LED_HOME", raising=False)
+    monkeypatch.delenv("CLAUDE_TRAFFIC_LIGHT_HOME", raising=False)
     monkeypatch.setenv("LOCALAPPDATA", str(tmp_path))
-    assert config.data_dir() == tmp_path / "claude-status-led"
+    assert config.data_dir() == tmp_path / "claude-code-traffic-light"

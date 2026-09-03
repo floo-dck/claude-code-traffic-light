@@ -3,7 +3,7 @@ behaviour is exactly what must not be verified by hand."""
 
 from serial import SerialException
 
-from statusled import transport
+from trafficlight import transport
 
 
 class FakePort:

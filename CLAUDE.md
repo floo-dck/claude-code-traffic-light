@@ -9,9 +9,9 @@ driven over USB serial by Claude Code hooks. Red = working, yellow = blocked
 on the user, green = idle, off = no live session.
 
 Two halves: `firmware/` (PlatformIO/Arduino, ESP32) and `host/` (Python 3.11
-CLI plus the `statusled` package). The board is a dumb slave; every decision
-about what the light means lives on the host, so behaviour changes never
-require reflashing.
+CLI plus the `trafficlight` package). The board is a dumb slave; every
+decision about what the light means lives on the host, so behaviour changes
+never require reflashing.
 
 ## Commands
 
@@ -37,8 +37,8 @@ All host commands assume the repo-root venv (`py -3.11 -m venv .venv`):
 .venv\Scripts\python.exe host\install_hooks.py --uninstall
 
 # Manual checks
-.venv\Scripts\python.exe host\claude_status_led.py selftest
-.venv\Scripts\python.exe host\claude_status_led.py status
+.venv\Scripts\python.exe host\traffic_light.py selftest
+.venv\Scripts\python.exe host\traffic_light.py status
 ```
 
 Close any `pio device monitor` before running the CLI or uploading — it holds
@@ -54,27 +54,29 @@ layer takes a `factory` parameter that the tests fill with a `FakePort`, and
 The chain is: hook → CLI → one state file per session → aggregation → one
 character over serial → firmware.
 
-- `host/statusled/config.py` — where runtime state lives:
-  `%LOCALAPPDATA%\claude-status-led\` (config.json, sessions/, led.log).
+- `host/trafficlight/config.py` — where runtime state lives:
+  `%LOCALAPPDATA%\claude-code-traffic-light\` (config.json, sessions/,
+  led.log).
   Deliberately outside the repo, because hooks are registered globally.
-  `CLAUDE_STATUS_LED_HOME` redirects every path; the tests rely on it.
-- `host/statusled/store.py` — each session writes **only its own file**. That
-  rule is what removes cross-process locking on Windows. Writes go via
+  `CLAUDE_TRAFFIC_LIGHT_HOME` redirects every path; the tests rely on it.
+- `host/trafficlight/store.py` — each session writes **only its own file**.
+  That rule is what removes cross-process locking on Windows. Writes go via
   `tempfile.mkstemp` + `os.replace` so readers never see a half-written file.
   Files older than `stale_after_minutes` (default 120) are skipped and pruned;
   unparseable files are skipped but kept, since they are usually a write race.
-- `host/statusled/aggregate.py` — reduces all live states to one command with
-  a fixed priority: `blocked` (Y) > `working` (R) > `idle` (G), else off (O).
+- `host/trafficlight/aggregate.py` — reduces all live states to one command
+  with a fixed priority: `blocked` (Y) > `working` (R) > `idle` (G), else
+  off (O).
   "Somebody needs you" must always outrank "still working". Unknown state
   names are ignored rather than blanking the light.
-- `host/statusled/transport.py` — port detection by USB VID/PID (CH340
+- `host/trafficlight/transport.py` — port detection by USB VID/PID (CH340
   1A86:7523, CH9102 1A86:55D4, CP210x 10C4:EA60); an explicit `port` in the
   config always wins. 3 retries, ~80 ms backoff, 1.5 s hard deadline, returns
   `(ok, reason)` and never raises.
-- `host/claude_status_led.py` — subcommands `set`, `clear`, `status`,
+- `host/traffic_light.py` — subcommands `set`, `clear`, `status`,
   `selftest`. `set`/`clear` read the hook JSON payload from stdin.
 - `host/install_hooks.py` — surgical merge into `~/.claude/settings.json`:
-  only entries whose command contains `claude_status_led.py` are touched, so
+  only entries whose command contains `traffic_light.py` are touched, so
   unrelated hooks and settings survive. Re-running is safe and is the
   supported way to repoint the hooks after moving the repo. Backs up to
   `settings.json.bak` first and refuses to touch an unparseable file.
@@ -96,10 +98,10 @@ until the turn ends.
 
 - **A hook must never fail or block.** `set` and `clear` always exit 0, on
   every error path, and errors go to the size-capped log
-  (`%LOCALAPPDATA%\claude-status-led\led.log`), **never** to stderr — hook
-  stderr can surface in the Claude Code UI. This outranks correctness of the
-  light. `status` and `selftest` are for humans and do report failure via exit
-  code.
+  (`%LOCALAPPDATA%\claude-code-traffic-light\led.log`), **never** to stderr —
+  hook stderr can surface in the Claude Code UI. This outranks correctness of
+  the light. `status` and `selftest` are for humans and do report failure via
+  exit code.
 - **DTR and RTS are cleared before the port is opened**, not after. On a CH340
   those lines drive the auto-reset circuit; asserting them would reboot the
   ESP32 on every hook invocation, and clearing them after open is already one

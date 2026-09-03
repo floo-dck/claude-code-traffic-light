@@ -7,14 +7,14 @@ import json
 
 import pytest
 
-import claude_status_led as cli
-from statusled import store
+import traffic_light as cli
+from trafficlight import store
 
 
 @pytest.fixture(autouse=True)
 def isolated_home(tmp_path, monkeypatch):
     """Keep every test out of the real %LOCALAPPDATA%."""
-    monkeypatch.setenv("CLAUDE_STATUS_LED_HOME", str(tmp_path))
+    monkeypatch.setenv("CLAUDE_TRAFFIC_LIGHT_HOME", str(tmp_path))
     return tmp_path
 
 
