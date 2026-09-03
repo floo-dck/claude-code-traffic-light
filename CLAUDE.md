@@ -24,7 +24,9 @@ All host commands assume the repo-root venv (`py -3.11 -m venv .venv`):
 .venv\Scripts\python.exe -m pytest host\tests -v
 .venv\Scripts\python.exe -m pytest host\tests\test_store.py::test_name -v   # single test
 
-# Firmware (BOOT button must be held through "Connecting...." — this board's
+# Firmware (BOOT button must be held through "Connecting...." and released
+# once the chip is identified, or the hard reset ending the upload leaves the
+# chip in download mode and nothing answers on serial — this board's
 # auto-program circuit does not pull GPIO0 low, so upload fails with
 # "Wrong boot mode detected (0x13)" otherwise)
 .venv\Scripts\python.exe -m platformio run --project-dir firmware
