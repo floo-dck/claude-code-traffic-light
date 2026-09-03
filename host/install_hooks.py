@@ -16,7 +16,13 @@ import tempfile
 from pathlib import Path
 
 # How an entry is recognised as ours, both for replacing and for uninstalling.
+# MARKER is the name written into new entries; LEGACY_MARKERS are names this
+# project used before and must still recognise, so that re-running the
+# installer repairs an old installation instead of orphaning it. This is
+# permanent, not a migration: dropping it would silently leave dead hooks in
+# the settings file of anyone who installed before the rename.
 MARKER = "traffic_light.py"
+LEGACY_MARKERS = ("claude_status_led.py",)
 
 # The mapping from spec section 8. There is deliberately no per-tool-call hook:
 # the cost is a process launch per tool use, and the only symptom of leaving it
@@ -92,11 +98,14 @@ def _as_list(value):
 
 
 def _is_ours(entry):
-    """True when a settings entry invokes this CLI."""
+    """True when a settings entry invokes this CLI, under any name it ever had."""
     if not isinstance(entry, dict):
         return False
     for hook in _as_list(entry.get("hooks")):
-        if isinstance(hook, dict) and MARKER in str(hook.get("command", "")):
+        if not isinstance(hook, dict):
+            continue
+        command = str(hook.get("command", ""))
+        if any(name in command for name in (MARKER,) + LEGACY_MARKERS):
             return True
     return False
 

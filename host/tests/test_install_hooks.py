@@ -143,3 +143,49 @@ def test_a_corrupt_settings_file_is_refused_rather_than_overwritten(tmp_path):
     assert install_hooks.main(["--settings", str(target), "--python", PYTHON, "--cli", CLI]) == 1
     # Refusing to guess is the point: the user's file is left exactly as it was.
     assert target.read_text(encoding="utf-8") == "{ broken"
+
+
+LEGACY_CLI = "C:/old/host/claude_status_led.py"
+
+
+def test_a_hook_installed_under_the_old_name_is_replaced():
+    # Anyone who installed hooks before the rename has entries naming the old
+    # CLI. Re-running the installer is the documented repair, so it has to
+    # recognise them; otherwise they stay behind and fire a missing script.
+    settings = {
+        "hooks": {
+            "Stop": [
+                {
+                    "hooks": [
+                        {
+                            "type": "command",
+                            "command": '"C:/old/python.exe" "%s" set idle' % LEGACY_CLI,
+                        }
+                    ]
+                }
+            ]
+        }
+    }
+    merged = install_hooks.merge_hooks(settings, PYTHON, CLI)
+    commands = _commands(merged, "Stop")
+    assert len(commands) == 1
+    assert "claude_status_led.py" not in commands[0]
+    assert install_hooks.MARKER in commands[0]
+
+
+def test_uninstalling_also_removes_hooks_installed_under_the_old_name():
+    settings = {
+        "hooks": {
+            "Stop": [
+                {"hooks": [{"type": "command", "command": '"py" "%s" set idle' % LEGACY_CLI}]},
+                {"hooks": [{"type": "command", "command": "echo other tool"}]},
+            ]
+        }
+    }
+    stripped = install_hooks.remove_hooks(settings)
+    assert _commands(stripped, "Stop") == ["echo other tool"]
+
+
+def test_the_marker_written_into_new_entries_is_the_current_name():
+    assert install_hooks.MARKER == "traffic_light.py"
+    assert "claude_status_led.py" in install_hooks.LEGACY_MARKERS
