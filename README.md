@@ -117,3 +117,10 @@ To remove the hooks again:
 Tests never touch real hardware or the real settings file. The design, its
 open hardware questions and its rejected alternatives are in
 [docs/superpowers/specs](docs/superpowers/specs/2026-09-02-claude-status-led-design.md).
+
+## 📄 Licence
+
+MIT — see [LICENSE](LICENSE).
+
+Not affiliated with or endorsed by Anthropic. Claude is a trademark of
+Anthropic PBC.
