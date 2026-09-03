@@ -1,45 +1,106 @@
-# claude-status-led
+# 🚦 claude-status-led
 
 A traffic-light status indicator for Claude Code, driven by an ESP32 over USB
 serial. Three LEDs mirror what the agent is doing, so you can tell at a glance
 whether it is still working, waiting on you, or done.
 
-| LED    | Meaning                                        |
-| ------ | ---------------------------------------------- |
-| Red    | Claude Code is working                         |
-| Yellow | Blocked: waiting for your input or a decision  |
-| Green  | Idle: the turn is finished                     |
+| LED | Meaning                                       |
+| --- | --------------------------------------------- |
+| 🔴  | Working                                       |
+| 🟡  | Blocked: waiting for your input or a decision |
+| 🟢  | Idle: the turn is finished                    |
+| ⚫  | No live session                               |
 
-Design and implementation notes live in `docs/`.
+## 💡 How it works
 
-## How it works
-
-Claude Code hooks report each session's state to a small Python CLI. The CLI
-writes one state file per session, reduces every live session to a single
-colour (`blocked` beats `working` beats `idle`), and sends one character over
-USB serial to an ESP32 that drives the three LEDs.
-
-## Setup
-
-```bash
-py -3.11 -m venv .venv
-.venv\Scripts\python.exe -m pip install -r host\requirements.txt
-.venv\Scripts\python.exe -m platformio run --project-dir firmware --target upload
-.venv\Scripts\python.exe host\install_hooks.py
+```
+ Claude Code hooks            host CLI
+┌──────────────┐  hook JSON  ┌───────────────────┐
+│ SessionStart │  on stdin   │ claude_status_led │
+│ UserPrompt   │ ──────────▶ │  .py set / clear  │
+│ Notification │             └─────────┬─────────┘
+│ Stop         │                       │ one file per session
+│ SessionEnd   │                       ▼
+└──────────────┘   %LOCALAPPDATA%\claude-status-led\sessions\
+                                       │
+                                       ▼
+                             ┌───────────────────┐
+                             │     aggregate     │
+                             │ blocked > working │
+                             │   > idle > off    │
+                             └─────────┬─────────┘
+ ESP32                                 │ one byte: R / Y / G / O
+┌──────────────┐                       │
+│ GPIO 25/26/27│ ◀─────────────────────┘
+│ 🔴 🟡 🟢     │      USB serial, 115200 baud
+└──────────────┘
 ```
 
-Hooks are read at startup, so restart Claude Code afterwards. Wiring is in
+Each hook fires the CLI, which writes **only its own session's file** — that is
+what removes cross-process locking on Windows, where two Claude Code windows
+would otherwise fight over one state file. The aggregation step then reduces
+every live session to a single colour, with a fixed priority: "somebody needs
+you" must always outrank "still working".
+
+The board is a dumb slave. It knows four commands and nothing about Claude
+Code, so changing what the light means never requires reflashing.
+
+The onboard LED on GPIO2 carries the same three states through timing, since
+one monochrome LED cannot show a colour: red is solid, yellow blinks every
+150 ms, green is an 80 ms heartbeat every 2 s. That makes the whole chain
+verifiable before a single external LED is wired up.
+
+## ⚙️ Setup
+
+1. Create the venv and install the host dependencies:
+
+   ```bash
+   py -3.11 -m venv .venv
+   .venv\Scripts\python.exe -m pip install -r host\requirements.txt
+   ```
+
+2. Flash the firmware:
+
+   ```bash
+   .venv\Scripts\python.exe -m platformio run --project-dir firmware --target upload
+   ```
+
+   > ⚠️ Hold the BOOT button through `Connecting....` and release it once the
+   > chip is identified. This board's auto-program circuit does not pull GPIO0
+   > low, so without it the upload fails with
+   > `Wrong boot mode detected (0x13)` — and holding it too long leaves the
+   > chip in download mode, where nothing answers on serial.
+
+3. Install the hooks into `~/.claude/settings.json`:
+
+   ```bash
+   .venv\Scripts\python.exe host\install_hooks.py
+   ```
+
+   Only entries that mention `claude_status_led.py` are touched, so unrelated
+   hooks survive. Re-running is safe, and is how you repoint the hooks after
+   moving the repo.
+
+4. **Restart Claude Code** — hooks are only read at startup.
+
+Wiring (GPIO25/26/27, 220 Ω each, active high) is in
 [docs/wiring.md](docs/wiring.md).
 
-## Checking it
+## 🔍 Checking it
 
 ```bash
 .venv\Scripts\python.exe host\claude_status_led.py selftest   # drive all colours
 .venv\Scripts\python.exe host\claude_status_led.py status     # what should be lit, and why
 ```
 
-Errors are never printed to the terminal — a hook must not interrupt you — so
-look in `%LOCALAPPDATA%\claude-status-led\led.log`.
+### Nothing lights up
+
+- Close any `pio device monitor` first — it holds the serial port.
+- Watch the onboard LED (GPIO2). If it follows the states, the host half works
+  and the problem is in the wiring.
+- Hook errors are never printed to the terminal — a hook must not interrupt
+  you — so they go to `%LOCALAPPDATA%\claude-status-led\led.log`.
+- Moved the repo? The hooks hold absolute paths. Re-run `install_hooks.py`.
 
 To remove the hooks again:
 
@@ -47,11 +108,12 @@ To remove the hooks again:
 .venv\Scripts\python.exe host\install_hooks.py --uninstall
 ```
 
-## Development
+## 🧪 Development
 
 ```bash
 .venv\Scripts\python.exe -m pytest host\tests -v
 ```
 
-The design and its rejected alternatives are in
+Tests never touch real hardware or the real settings file. The design, its
+open hardware questions and its rejected alternatives are in
 [docs/superpowers/specs](docs/superpowers/specs/2026-09-02-claude-status-led-design.md).
