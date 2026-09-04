@@ -31,8 +31,24 @@ def test_markdown_decoration_around_the_ending_is_ignored():
     assert looks_like_question("Weiter? *(y/n)*")
 
 
-def test_a_message_ending_in_a_code_block_is_not_a_question():
-    assert not looks_like_question("Frage: passt das?\n\n```bash\nls\n```")
+def test_a_question_followed_by_a_code_block_is_one():
+    # Showing the change and asking whether it is right is the same prompt for
+    # input as asking in prose; the block is what the question is about, not
+    # the end of the turn.
+    assert looks_like_question("Frage: passt das?\n\n```bash\nls\n```")
+
+
+def test_a_report_ending_in_a_code_block_is_not_a_question():
+    assert not looks_like_question("Fertig. Der Diff:\n\n```diff\n-a\n+b\n```")
+
+
+def test_a_long_code_block_does_not_use_up_the_tail_budget():
+    block = "\n".join("+ line %d" % i for i in range(40))
+    assert looks_like_question("Passt das?\n\n```diff\n" + block + "\n```")
+
+
+def test_a_message_that_ends_inside_an_unterminated_block_is_not_a_question():
+    assert not looks_like_question("Passt das?\n\n```diff\n-a\n+b")
 
 
 def test_a_bullet_list_ending_in_a_question_is_one():

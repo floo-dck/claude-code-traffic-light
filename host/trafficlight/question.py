@@ -33,8 +33,13 @@ _OPTION_LINE = re.compile(
     re.IGNORECASE,
 )
 
+# A fenced code block. Asking whether a change is right and then showing it is
+# a prompt for input, so the block is stepped over like an option list.
+_FENCE = re.compile(r"^\s*(?:```|~~~)")
+
 # How far back the walk may run. A question buried above a long tail is part
-# of the report, not the ending.
+# of the report, not the ending. A whole code block counts as one line, so a
+# long diff cannot exhaust the budget on its own.
 _MAX_TAIL_LINES = 12
 
 
@@ -43,18 +48,38 @@ def looks_like_question(message):
     if not isinstance(message, str):
         return False
 
+    lines = message.splitlines()
+    index = len(lines) - 1
     seen = 0
-    for line in reversed(message.splitlines()):
+    while index >= 0:
+        line = lines[index]
         if not line.strip():
+            index -= 1
             continue
         if seen >= _MAX_TAIL_LINES:
             return False
         seen += 1
+        if _FENCE.match(line):
+            index = _before_opening_fence(lines, index)
+            continue
         if _ends_with_question(line):
             return True
         if not _OPTION_LINE.match(line):
             return False
+        index -= 1
     return False
+
+
+def _before_opening_fence(lines, closing):
+    """Return the index just above the block that ends at `closing`.
+
+    An unbalanced fence means the message stops inside a block, which is not a
+    question, so the walk is sent past the start of the message.
+    """
+    for index in range(closing - 1, -1, -1):
+        if _FENCE.match(lines[index]):
+            return index - 1
+    return -1
 
 
 def _ends_with_question(line):

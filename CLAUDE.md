@@ -85,9 +85,11 @@ character over serial → firmware.
   tell "turn finished" from "turn ended by asking you something": Claude Code
   has no hook for a question asked in prose, so `stop` inspects the assistant's
   last message. It walks the last lines backwards, past trailing markdown, a
-  trailing parenthetical, and any option lines (bullets, numbered or lettered
-  items, table rows, `Option`/`Variante` lines), because the usual shape is a
-  question with its answers listed underneath. The walk stops at the first
+  trailing parenthetical, any option lines (bullets, numbered or lettered
+  items, table rows, `Option`/`Variante` lines) and any fenced code block,
+  because the usual shape is a question with its answers — or the diff it is
+  about — underneath. A whole block counts as one line against the budget.
+  The walk stops at the first
   line that is neither, which is what keeps a finished report green: a
   question explained mid-message and then answered by Claude is not a prompt
   for input. Bounded to 12 tail lines, so a question buried above a long
