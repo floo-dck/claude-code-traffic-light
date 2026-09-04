@@ -6,6 +6,8 @@ A traffic-light status indicator for Claude Code, driven by an ESP32 over USB
 serial. Three LEDs mirror what the agent is doing, so you can tell at a glance
 whether it is still working, waiting on you, or done.
 
+![Four traffic lights: red for working, yellow for blocked, green for idle, all dark for no session](assets/traffic-light.svg)
+
 | LED | Meaning                                       |
 | --- | --------------------------------------------- |
 | 🔴  | Working                                       |

@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 252" width="720" height="252" role="img" aria-label="Four traffic lights showing the four states: working is red, blocked is yellow, idle is green, no session is all dark.">
+<style>.label{font:600 15px system-ui,-apple-system,Segoe UI,Roboto,sans-serif;fill:#8b949e;text-anchor:middle}.house{fill:#22262c;stroke:#3d444d;stroke-width:2}.rim{fill:none;stroke:#000;stroke-opacity:.35;stroke-width:2}</style>
+<g transform="translate(44 8)">
+<rect x="0" y="0" width="92" height="206" rx="18" class="house"/>
+<circle cx="46" cy="52" r="35" fill="#e5484d" fill-opacity=".22"/>
+<circle cx="46" cy="52" r="26" fill="#e5484d"/>
+<circle cx="39" cy="44" r="7" fill="#fff" fill-opacity=".28"/>
+<circle cx="46" cy="52" r="26" class="rim"/>
+<circle cx="46" cy="103" r="26" fill="#4a412a"/>
+<circle cx="46" cy="103" r="26" class="rim"/>
+<circle cx="46" cy="154" r="26" fill="#2a4030"/>
+<circle cx="46" cy="154" r="26" class="rim"/>
+</g>
+<text x="90" y="242" class="label">Working</text>
+<g transform="translate(224 8)">
+<rect x="0" y="0" width="92" height="206" rx="18" class="house"/>
+<circle cx="46" cy="52" r="26" fill="#4a2b2d"/>
+<circle cx="46" cy="52" r="26" class="rim"/>
+<circle cx="46" cy="103" r="35" fill="#f5c518" fill-opacity=".22"/>
+<circle cx="46" cy="103" r="26" fill="#f5c518"/>
+<circle cx="39" cy="95" r="7" fill="#fff" fill-opacity=".28"/>
+<circle cx="46" cy="103" r="26" class="rim"/>
+<circle cx="46" cy="154" r="26" fill="#2a4030"/>
+<circle cx="46" cy="154" r="26" class="rim"/>
+</g>
+<text x="270" y="242" class="label">Blocked</text>
+<g transform="translate(404 8)">
+<rect x="0" y="0" width="92" height="206" rx="18" class="house"/>
+<circle cx="46" cy="52" r="26" fill="#4a2b2d"/>
+<circle cx="46" cy="52" r="26" class="rim"/>
+<circle cx="46" cy="103" r="26" fill="#4a412a"/>
+<circle cx="46" cy="103" r="26" class="rim"/>
+<circle cx="46" cy="154" r="35" fill="#3fb950" fill-opacity=".22"/>
+<circle cx="46" cy="154" r="26" fill="#3fb950"/>
+<circle cx="39" cy="146" r="7" fill="#fff" fill-opacity=".28"/>
+<circle cx="46" cy="154" r="26" class="rim"/>
+</g>
+<text x="450" y="242" class="label">Idle</text>
+<g transform="translate(584 8)">
+<rect x="0" y="0" width="92" height="206" rx="18" class="house"/>
+<circle cx="46" cy="52" r="26" fill="#4a2b2d"/>
+<circle cx="46" cy="52" r="26" class="rim"/>
+<circle cx="46" cy="103" r="26" fill="#4a412a"/>
+<circle cx="46" cy="103" r="26" class="rim"/>
+<circle cx="46" cy="154" r="26" fill="#2a4030"/>
+<circle cx="46" cy="154" r="26" class="rim"/>
+</g>
+<text x="630" y="242" class="label">No session</text>
+</svg>
