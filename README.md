@@ -93,8 +93,23 @@ the purity.
 
 4. **Restart Claude Code** — hooks are only read at startup.
 
-Wiring (GPIO25/26/27, 220 Ω each, active high) is in
-[docs/wiring.md](docs/wiring.md).
+Wiring — LEDs are active high, GPIO drives the anode through a series
+resistor, cathode (the short leg) to ground:
+
+```
+GPIO25 ──[220Ω]──▶|── GND   (red)
+GPIO26 ──[220Ω]──▶|── GND   (yellow)
+GPIO27 ──[220Ω]──▶|── GND   (green)
+```
+
+An ESP32 pin sources only about 12 mA, so the resistor is not optional.
+Reset the board: red, yellow and green light for 200 ms each in turn. Any
+colour missing from that sweep is a wiring fault on that leg.
+
+Different pins or a common-anode module (KY-009 and clones): the defaults in
+[`firmware/include/pins.h`](firmware/include/pins.h) are all `#ifndef`-guarded,
+so build flags override them — see `env:esp32dev_common_anode` in
+`firmware/platformio.ini`.
 
 ## 🔍 Checking it
 
@@ -132,9 +147,7 @@ board on either system.
 .venv\Scripts\python.exe -m pytest host\tests -v
 ```
 
-Tests never touch real hardware or the real settings file. The design, its
-open hardware questions and its rejected alternatives are in
-[docs/design](docs/design/2026-09-02-claude-status-led-design.md).
+Tests never touch real hardware or the real settings file.
 
 ## 📄 Licence
 

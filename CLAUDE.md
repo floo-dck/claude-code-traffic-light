@@ -105,22 +105,9 @@ until the turn ends.
 - **DTR and RTS are cleared before the port is opened**, not after. On a CH340
   those lines drive the auto-reset circuit; asserting them would reboot the
   ESP32 on every hook invocation, and clearing them after open is already one
-  reset too late. Verified 2026-09-02 (spec section 14).
+  reset too late. Verified 2026-09-02.
 - Config loading tolerates every failure mode — missing, unreadable,
   malformed, wrong types — and returns a usable config instead of raising.
 - Moving or deleting this repo breaks the light silently, because the hooks
   hold absolute paths and hook mode reports nothing. Re-run
   `host/install_hooks.py`.
-
-## Docs
-
-Design documents live in `docs/design/`, newest last.
-`docs/design/2026-09-02-claude-status-led-design.md` is the design of record —
-read it before changing behaviour. Section 14 tracks hardware
-questions to answer empirically, 15 the known limitations, 16 the rejected
-alternatives (local daemon, Wi-Fi/HTTP, MicroPython, ESPHome, WS2812) so they
-are not relitigated. `docs/design/2026-09-03-public-release-design.md` covers
-the public release: licence, name, build-time pin configuration, CI.
-`docs/wiring.md` has the schematic (GPIO25/26/27, 220 Ω
-each, active high). `TODO.md` holds the items that need a human at the
-keyboard.
