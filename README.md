@@ -139,6 +139,3 @@ open hardware questions and its rejected alternatives are in
 ## 📄 Licence
 
 MIT — see [LICENSE](LICENSE).
-
-Not affiliated with or endorsed by Anthropic. Claude is a trademark of
-Anthropic PBC.
