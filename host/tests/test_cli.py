@@ -166,3 +166,50 @@ def test_selftest_reports_a_missing_port(monkeypatch, isolated_home, capsys):
     monkeypatch.setattr(cli.transport, "detect_port", lambda *a, **k: None)
     assert cli.main(["selftest"]) == 1
     assert "no serial port" in capsys.readouterr().out.lower()
+
+
+def test_stop_leaves_the_light_yellow_when_the_turn_ended_in_a_question(
+    monkeypatch, isolated_home, sent
+):
+    _stdin(
+        monkeypatch,
+        {
+            "session_id": "sess-q",
+            "hook_event_name": "Stop",
+            "last_assistant_message": "Soll ich das committen?",
+        },
+    )
+    assert cli.main(["stop"]) == 0
+    assert sent[-1][0] == "Y"
+    record = json.loads((isolated_home / "sessions" / "sess-q.json").read_text(encoding="utf-8"))
+    assert record["state"] == "blocked"
+
+
+def test_stop_goes_green_when_the_turn_just_finished(monkeypatch, isolated_home, sent):
+    _stdin(
+        monkeypatch,
+        {
+            "session_id": "sess-d",
+            "hook_event_name": "Stop",
+            "last_assistant_message": "Fertig. Alle Tests laufen.",
+        },
+    )
+    assert cli.main(["stop"]) == 0
+    assert sent[-1][0] == "G"
+
+
+def test_stop_falls_back_to_green_without_a_last_message(monkeypatch, isolated_home, sent):
+    _stdin(monkeypatch, {"session_id": "sess-n", "hook_event_name": "Stop"})
+    assert cli.main(["stop"]) == 0
+    assert sent[-1][0] == "G"
+
+
+def test_stop_never_fails_even_with_a_broken_payload(monkeypatch, isolated_home, sent):
+    monkeypatch.setattr(cli.sys, "stdin", io.StringIO("not json at all"))
+    assert cli.main(["stop"]) == 0
+
+
+def test_stop_honours_the_session_flag(monkeypatch, isolated_home, sent):
+    _stdin(monkeypatch, {"session_id": "from-payload"})
+    assert cli.main(["stop", "--session", "from-flag"]) == 0
+    assert (isolated_home / "sessions" / "from-flag.json").exists()

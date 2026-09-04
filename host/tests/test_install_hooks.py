@@ -21,24 +21,72 @@ def _commands(settings, event):
     return [h["command"] for entry in settings["hooks"][event] for h in entry["hooks"]]
 
 
-def test_all_five_events_are_installed():
+def _entry_for(settings, event, tail):
+    """The one entry of an event whose command ends in the given arguments."""
+    matches = [
+        entry
+        for entry in settings["hooks"][event]
+        if any(h["command"].endswith(tail) for h in entry["hooks"])
+    ]
+    assert len(matches) == 1, "expected exactly one %s entry ending in %r" % (event, tail)
+    return matches[0]
+
+
+def test_every_event_in_the_spec_is_installed():
     merged = install_hooks.merge_hooks({}, PYTHON, CLI)
-    assert set(merged["hooks"]) == {
-        "SessionStart",
-        "UserPromptSubmit",
-        "Notification",
-        "Stop",
-        "SessionEnd",
-    }
+    assert set(merged["hooks"]) == {spec["event"] for spec in install_hooks.HOOK_SPECS}
 
 
 def test_each_event_gets_the_right_subcommand():
     merged = install_hooks.merge_hooks({}, PYTHON, CLI)
     assert _commands(merged, "UserPromptSubmit")[0].endswith("set working")
-    assert _commands(merged, "Notification")[0].endswith("set blocked")
-    assert _commands(merged, "Stop")[0].endswith("set idle")
     assert _commands(merged, "SessionStart")[0].endswith("set idle")
     assert _commands(merged, "SessionEnd")[0].endswith("clear")
+    # Stop no longer hard-codes idle: whether a finished turn is waiting on an
+    # answer is decided from the assistant's last message.
+    assert _commands(merged, "Stop")[0].endswith("stop")
+
+
+def test_the_interactive_question_tool_drives_both_edges():
+    # This is the whole point of the tool hooks: yellow the moment the question
+    # appears, red the moment it is answered. Waiting for a Notification meant
+    # a minute of wrong colour at each edge.
+    merged = install_hooks.merge_hooks({}, PYTHON, CLI)
+    ask = _entry_for(merged, "PreToolUse", "set blocked")
+    assert ask["matcher"] == "AskUserQuestion"
+    done = _entry_for(merged, "PostToolUse", "set working")
+    assert "matcher" not in done  # every tool ends the wait, not just this one
+
+
+def test_a_permission_prompt_goes_yellow_without_waiting_for_the_notification():
+    merged = install_hooks.merge_hooks({}, PYTHON, CLI)
+    assert _commands(merged, "PermissionRequest")[0].endswith("set blocked")
+    assert _commands(merged, "PermissionDenied")[0].endswith("set working")
+
+
+def test_the_notification_hook_ignores_the_idle_prompt():
+    # idle_prompt fires 60 s after a turn ends with nobody typing. Treating it
+    # as "blocked" is what turned an idle green light yellow on its own.
+    merged = install_hooks.merge_hooks({}, PYTHON, CLI)
+    entry = merged["hooks"]["Notification"][0]
+    assert "idle_prompt" not in entry["matcher"]
+    assert "permission_prompt" in entry["matcher"]
+
+
+def test_signalling_hooks_do_not_block_the_agent():
+    # A light is never worth delaying a tool call for, and PostToolUse fires on
+    # every single one.
+    merged = install_hooks.merge_hooks({}, PYTHON, CLI)
+    for hook in merged["hooks"]["PostToolUse"][0]["hooks"]:
+        assert hook["async"] is True
+
+
+def test_the_session_end_hook_stays_synchronous():
+    # Its whole job is to delete the session file before the process leaves;
+    # an async hook is killed at teardown and the light would stay lit.
+    merged = install_hooks.merge_hooks({}, PYTHON, CLI)
+    for hook in merged["hooks"]["SessionEnd"][0]["hooks"]:
+        assert "async" not in hook
 
 
 def test_paths_are_quoted_so_spaces_survive():
@@ -189,3 +237,25 @@ def test_uninstalling_also_removes_hooks_installed_under_the_old_name():
 def test_the_marker_written_into_new_entries_is_the_current_name():
     assert install_hooks.MARKER == "traffic_light.py"
     assert "claude_status_led.py" in install_hooks.LEGACY_MARKERS
+
+
+def test_hooks_installed_by_the_old_single_notification_layout_are_replaced():
+    # The first version registered one unfiltered Notification hook. Re-running
+    # the installer is the documented repair, so that entry must not survive.
+    settings = {
+        "hooks": {
+            "Notification": [
+                {
+                    "hooks": [
+                        {
+                            "type": "command",
+                            "command": '"py" "%s" set blocked' % CLI,
+                        }
+                    ]
+                }
+            ]
+        }
+    }
+    merged = install_hooks.merge_hooks(settings, PYTHON, CLI)
+    assert len(merged["hooks"]["Notification"]) == 1
+    assert merged["hooks"]["Notification"][0]["matcher"]

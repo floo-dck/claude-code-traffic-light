@@ -21,13 +21,13 @@ whether it is still working, waiting on you, or done.
  Claude Code hooks            host CLI
 ┌──────────────┐  hook JSON  ┌───────────────────┐
 │ SessionStart │  on stdin   │ traffic_light.py  │
-│ UserPrompt   │ ──────────▶ │    set / clear    │
-│ Notification │             └─────────┬─────────┘
-│ Stop         │                       │ one file per session
-│ SessionEnd   │                       ▼
-└──────────────┘   %LOCALAPPDATA%\claude-code-traffic-light\sessions\
-                                       │
-                                       ▼
+│ UserPrompt   │ ──────────▶ │ set / stop / clear│
+│ Pre/PostTool │             └─────────┬─────────┘
+│ Permission…  │                       │ one file per session
+│ Notification │                       ▼
+│ Stop         │   %LOCALAPPDATA%\claude-code-traffic-light\sessions\
+│ SessionEnd   │                       │
+└──────────────┘                       ▼
                              ┌───────────────────┐
                              │     aggregate     │
                              │ blocked > working │
@@ -39,6 +39,15 @@ whether it is still working, waiting on you, or done.
 │ 🔴 🟡 🟢     │      USB serial, 115200 baud
 └──────────────┘
 ```
+
+Yellow is driven by the events that mean the user is genuinely needed:
+`PreToolUse` on `AskUserQuestion` and `PermissionRequest` fire the moment the
+prompt appears, and `PostToolUse` clears it the moment it is answered. The
+`Notification` hook keeps only the prompt types that have no event of their own
+— `idle_prompt` is deliberately excluded, because it fires 60 s after *every*
+finished turn and would turn a quiet green light yellow on its own. At `Stop`
+the CLI reads Claude's last message and stays yellow when the turn ended in a
+question. Every hook but `SessionEnd` is `async`, so none can delay the agent.
 
 Each hook fires the CLI, which writes **only its own session's file** — that is
 what removes cross-process locking on Windows, where two Claude Code windows

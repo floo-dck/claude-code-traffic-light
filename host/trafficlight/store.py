@@ -45,14 +45,27 @@ def write_state(sessions_dir, session_id, state, cwd=None, hook_event=None, now=
     The write goes to a temporary file in the same directory and is then
     renamed over the target, so a concurrent reader never observes a
     half-written document. os.replace is atomic on Windows as well as POSIX.
+
+    A record stamped later than this one is left alone, so an async hook that
+    overtakes a younger event cannot roll the light backwards.
     """
     sessions = Path(sessions_dir)
     sessions.mkdir(parents=True, exist_ok=True)
     target = session_path(sessions, session_id)
+    moment = now or datetime.now(timezone.utc)
+
+    # Hooks run async, so two of them are in flight at once whenever a tool
+    # call and a permission prompt meet. They can finish in either order, and
+    # the light must reflect the newer event rather than the slower process.
+    # An unreadable record loses this comparison on purpose: a write is the
+    # cheapest way to repair one.
+    existing = _read_record(target)
+    if existing is not None and existing[0] > moment:
+        return target
 
     payload = {
         "state": state,
-        "updated_at": (now or datetime.now(timezone.utc)).isoformat(),
+        "updated_at": moment.isoformat(),
         "cwd": cwd if cwd is not None else os.getcwd(),
         "hook_event": hook_event or "",
     }

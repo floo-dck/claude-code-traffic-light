@@ -124,3 +124,30 @@ def test_clearing_removes_the_file(tmp_path):
 
 def test_clearing_a_missing_file_is_not_an_error(tmp_path):
     assert store.clear_state(tmp_path, "never-existed") is False
+
+
+def test_an_out_of_order_write_does_not_undo_a_newer_state(tmp_path):
+    # Hooks run async now, so two of them can be in flight at once and finish
+    # in the wrong order. The record carries the event's own time, and an older
+    # event must never overwrite a younger one.
+    store.write_state(tmp_path, "abc", "blocked", now=NOW)
+    store.write_state(tmp_path, "abc", "working", now=NOW - timedelta(seconds=1))
+    assert store.read_live_states(tmp_path, 120, now=NOW) == ["blocked"]
+
+
+def test_a_later_event_still_wins(tmp_path):
+    store.write_state(tmp_path, "abc", "blocked", now=NOW)
+    store.write_state(tmp_path, "abc", "working", now=NOW + timedelta(seconds=1))
+    assert store.read_live_states(tmp_path, 120, now=NOW + timedelta(seconds=1)) == ["working"]
+
+
+def test_two_events_at_the_same_instant_take_the_last_writer(tmp_path):
+    store.write_state(tmp_path, "abc", "blocked", now=NOW)
+    store.write_state(tmp_path, "abc", "working", now=NOW)
+    assert store.read_live_states(tmp_path, 120, now=NOW) == ["working"]
+
+
+def test_an_unreadable_record_does_not_block_a_new_write(tmp_path):
+    (tmp_path / "abc.json").write_text("{ half-written", encoding="utf-8")
+    store.write_state(tmp_path, "abc", "working", now=NOW)
+    assert store.read_live_states(tmp_path, 120, now=NOW) == ["working"]

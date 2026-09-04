@@ -69,6 +69,9 @@ character over serial → firmware.
   `tempfile.mkstemp` + `os.replace` so readers never see a half-written file.
   Files older than `stale_after_minutes` (default 120) are skipped and pruned;
   unparseable files are skipped but kept, since they are usually a write race.
+  A write whose timestamp is older than the record already on disk is dropped:
+  hooks run async, so two of them are in flight whenever a tool call meets a
+  permission prompt, and the newer *event* must win over the faster process.
 - `host/trafficlight/aggregate.py` — reduces all live states to one command
   with a fixed priority: `blocked` (Y) > `working` (R) > `idle` (G), else
   off (O).
@@ -78,8 +81,23 @@ character over serial → firmware.
   1A86:7523, CH9102 1A86:55D4, CP210x 10C4:EA60); an explicit `port` in the
   config always wins. 3 retries, ~80 ms backoff, 1.5 s hard deadline, returns
   `(ok, reason)` and never raises.
-- `host/traffic_light.py` — subcommands `set`, `clear`, `status`,
-  `selftest`. `set`/`clear` read the hook JSON payload from stdin.
+- `host/trafficlight/question.py` — `looks_like_question`, the only way to
+  tell "turn finished" from "turn ended by asking you something": Claude Code
+  has no hook for a question asked in prose, so `stop` inspects the assistant's
+  last message. It walks the last lines backwards, past trailing markdown, a
+  trailing parenthetical, and any option lines (bullets, numbered or lettered
+  items, table rows, `Option`/`Variante` lines), because the usual shape is a
+  question with its answers listed underneath. The walk stops at the first
+  line that is neither, which is what keeps a finished report green: a
+  question explained mid-message and then answered by Claude is not a prompt
+  for input. Bounded to 12 tail lines, so a question buried above a long
+  summary does not count.
+- `host/traffic_light.py` — subcommands `set`, `stop`, `clear`, `status`,
+  `selftest`. `set`/`stop`/`clear` read the hook JSON payload from stdin.
+  `stop` is the Stop hook: blocked when `last_assistant_message` ends in a
+  question, idle otherwise. Records are stamped with `STARTED_AT`, the process
+  start time, because async hooks overlap and the store orders them by that
+  stamp rather than by whoever reaches the disk first.
 - `host/install_hooks.py` — surgical merge into `~/.claude/settings.json`:
   only entries whose command contains `traffic_light.py` are touched, so
   unrelated hooks and settings survive. Re-running is safe and is the
@@ -93,15 +111,29 @@ character over serial → firmware.
   restarts the pattern phase, so a repeat of the current state is visible too
   — that is the verification signal before any LED is wired.
 
-Hook mapping (in `install_hooks.HOOK_EVENTS`): SessionStart → idle,
-UserPromptSubmit → working, Notification → blocked, Stop → idle, SessionEnd →
-clear. There is no per-tool-call hook on purpose: it costs a process launch
-per tool use, and the only symptom of omitting it is a light that stays yellow
-until the turn ends.
+Hook mapping (in `install_hooks.HOOK_SPECS`): SessionStart → idle,
+UserPromptSubmit → working, PreToolUse[AskUserQuestion] → blocked, PostToolUse
+→ working, PermissionRequest → blocked, PermissionDenied → working,
+Notification[permission_prompt|elicitation_*|agent_needs_input] → blocked,
+Elicitation → blocked, ElicitationResult → working, Stop → `stop`, SessionEnd
+→ clear.
+
+Yellow is deliberately **not** driven by Notification alone. `idle_prompt`
+fires 60 s after every finished turn with nobody typing, which turned an idle
+green light yellow by itself; `permission_prompt` only fires after the prompt
+has waited ~6 s; and an `AskUserQuestion` prompt raises no notification at all.
+So the prompt events drive both edges directly and the Notification matcher
+keeps only the types that have no event of their own.
+
+PostToolUse fires on every tool call. It is the price of the yellow→red edge
+after a permission prompt is approved: the tool then just runs, and nothing
+else reports it. Every hook but SessionEnd carries `"async": true`, so none of
+them can delay the agent; SessionEnd stays synchronous because an async hook
+is killed at teardown and its session file would outlive the session.
 
 ## Invariants
 
-- **A hook must never fail or block.** `set` and `clear` always exit 0, on
+- **A hook must never fail or block.** `set`, `stop` and `clear` always exit 0, on
   every error path, and errors go to the size-capped log
   (`%LOCALAPPDATA%\claude-code-traffic-light\led.log`), **never** to stderr —
   hook stderr can surface in the Claude Code UI. This outranks correctness of

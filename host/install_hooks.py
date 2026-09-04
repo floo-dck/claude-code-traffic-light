@@ -24,16 +24,54 @@ from pathlib import Path
 MARKER = "traffic_light.py"
 LEGACY_MARKERS = ("claude_status_led.py",)
 
-# The mapping from spec section 8. There is deliberately no per-tool-call hook:
-# the cost is a process launch per tool use, and the only symptom of leaving it
-# out is a light that stays yellow until the turn ends.
-HOOK_EVENTS = {
-    "SessionStart": ["set", "idle"],
-    "UserPromptSubmit": ["set", "working"],
-    "Notification": ["set", "blocked"],
-    "Stop": ["set", "idle"],
-    "SessionEnd": ["clear"],
-}
+# What each Claude Code event means for the light.
+#
+# The rule the layout follows: yellow must appear the moment the user is
+# actually needed, and disappear the moment they are not. Waiting for a
+# Notification does neither — `permission_prompt` only fires after the prompt
+# has sat there for about six seconds, an AskUserQuestion prompt raises no
+# notification at all, and `idle_prompt` fires 60 s after every finished turn
+# with nobody typing, which is exactly how a quiet green light used to turn
+# yellow by itself. So the prompt events drive the light directly and the
+# Notification hook keeps only the types that really mean "you are needed".
+#
+# PostToolUse is the one hook that fires on every tool call. It earns that
+# cost by being the only signal that a permission prompt was answered: the
+# approved tool then runs, and nothing else reports it. Every entry except
+# SessionEnd is async, so none of them can delay the agent; SessionEnd stays
+# synchronous because an async hook is killed at teardown and the session file
+# would survive its session.
+HOOK_SPECS = (
+    {"event": "SessionStart", "arguments": ["set", "idle"]},
+    {"event": "UserPromptSubmit", "arguments": ["set", "working"]},
+    # The interactive question tool: yellow before it renders, red once the
+    # answer is in.
+    {
+        "event": "PreToolUse",
+        "matcher": "AskUserQuestion",
+        "arguments": ["set", "blocked"],
+    },
+    {"event": "PostToolUse", "arguments": ["set", "working"]},
+    # Fires the instant Claude asks for permission, six seconds before the
+    # matching notification would.
+    {"event": "PermissionRequest", "arguments": ["set", "blocked"]},
+    {"event": "PermissionDenied", "arguments": ["set", "working"]},
+    # The remaining prompts that have no dedicated event, minus idle_prompt.
+    {
+        "event": "Notification",
+        "matcher": (
+            "permission_prompt|elicitation_dialog|elicitation_url_dialog"
+            "|agent_needs_input"
+        ),
+        "arguments": ["set", "blocked"],
+    },
+    {"event": "Elicitation", "arguments": ["set", "blocked"]},
+    {"event": "ElicitationResult", "arguments": ["set", "working"]},
+    # Not "set idle": a turn that ends in a question is still waiting on the
+    # user, and only the CLI can see the assistant's last message.
+    {"event": "Stop", "arguments": ["stop"]},
+    {"event": "SessionEnd", "arguments": ["clear"], "async": False},
+)
 
 
 def build_command(python_exe, cli_path, arguments):
@@ -56,21 +94,31 @@ def merge_hooks(settings, python_exe, cli_path):
         hooks = {}
         merged["hooks"] = hooks
 
-    for event, arguments in sorted(HOOK_EVENTS.items()):
+    for event in sorted({spec["event"] for spec in HOOK_SPECS}):
         kept = [e for e in _as_list(hooks.get(event)) if not _is_ours(e)]
-        kept.append(
-            {
-                "hooks": [
-                    {
-                        "type": "command",
-                        "command": build_command(python_exe, cli_path, arguments),
-                    }
-                ]
-            }
+        kept.extend(
+            _entry(spec, python_exe, cli_path)
+            for spec in HOOK_SPECS
+            if spec["event"] == event
         )
         hooks[event] = kept
 
     return merged
+
+
+def _entry(spec, python_exe, cli_path):
+    """Build one settings entry from a spec."""
+    hook = {
+        "type": "command",
+        "command": build_command(python_exe, cli_path, spec["arguments"]),
+    }
+    if spec.get("async", True):
+        hook["async"] = True
+
+    entry = {"hooks": [hook]}
+    if "matcher" in spec:
+        entry["matcher"] = spec["matcher"]
+    return entry
 
 
 def remove_hooks(settings):
@@ -161,8 +209,16 @@ def main(argv=None):
 
     action = "removed from" if args.uninstall else "installed into"
     print("hooks %s %s" % (action, target))
-    for event in sorted(HOOK_EVENTS):
-        print("  %s" % event)
+    for spec in HOOK_SPECS:
+        matcher = spec.get("matcher")
+        print(
+            "  %-18s %s%s"
+            % (
+                spec["event"],
+                " ".join(spec["arguments"]),
+                "  [%s]" % matcher if matcher else "",
+            )
+        )
     return 0
 
 

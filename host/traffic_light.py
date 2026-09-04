@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Traffic-light status indicator for Claude Code.
 
-Usually invoked from a Claude Code hook. In `set` and `clear` mode this tool
+Usually invoked from a Claude Code hook. In `set`, `stop` and `clear` mode it
 must never fail: it always exits 0, logs to a file instead of stderr, and
 gives up rather than delay the agent. `status` and `selftest` are for humans
 and do report failure through their exit code.
@@ -14,9 +14,15 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from trafficlight import config, store, transport
-from trafficlight.aggregate import VALID_STATES, aggregate
+from trafficlight.aggregate import STATE_BLOCKED, STATE_IDLE, VALID_STATES, aggregate
+from trafficlight.question import looks_like_question
 
 LOG_MAX_BYTES = 256 * 1024
+
+# Stamped once, at process start, because most hooks now run async: two of
+# them can be in flight at once, and the store orders them by this timestamp
+# rather than by whichever process reaches the disk first.
+STARTED_AT = datetime.now(timezone.utc)
 
 
 def build_parser():
@@ -28,6 +34,11 @@ def build_parser():
     setter = sub.add_parser("set", help="record this session's state")
     setter.add_argument("state", choices=list(VALID_STATES))
     setter.add_argument("--session", default=None, help="override the session id")
+
+    stopper = sub.add_parser(
+        "stop", help="end of turn: idle, or blocked if Claude asked something"
+    )
+    stopper.add_argument("--session", default=None, help="override the session id")
 
     clearer = sub.add_parser("clear", help="forget this session")
     clearer.add_argument("--session", default=None, help="override the session id")
@@ -42,6 +53,8 @@ def main(argv=None):
     args = build_parser().parse_args(argv)
     if args.command == "set":
         return _command_set(args)
+    if args.command == "stop":
+        return _command_stop(args)
     if args.command == "clear":
         return _command_clear(args)
     if args.command == "status":
@@ -52,18 +65,38 @@ def main(argv=None):
 def _command_set(args):
     """Record a state and refresh the light. Always exits 0."""
     try:
-        payload = _read_hook_payload()
-        store.write_state(
-            config.sessions_dir(),
-            args.session or payload.get("session_id") or "",
-            args.state,
-            cwd=payload.get("cwd"),
-            hook_event=payload.get("hook_event_name"),
-        )
-        _refresh_light()
+        _record(args.session, _read_hook_payload(), args.state)
     except Exception:  # noqa: BLE001 - a failing hook is worse than a wrong light
         _log_exception("set %s" % args.state)
     return 0
+
+
+def _command_stop(args):
+    """Decide what the end of a turn means and refresh the light. Always exits 0.
+
+    A turn that ends in a question is still waiting on the user, so it stays
+    yellow. Everything else is done, and done is green.
+    """
+    try:
+        payload = _read_hook_payload()
+        waiting = looks_like_question(payload.get("last_assistant_message"))
+        _record(args.session, payload, STATE_BLOCKED if waiting else STATE_IDLE)
+    except Exception:  # noqa: BLE001 - see _command_set
+        _log_exception("stop")
+    return 0
+
+
+def _record(session, payload, state):
+    """Write one session's state and push the resulting colour."""
+    store.write_state(
+        config.sessions_dir(),
+        session or payload.get("session_id") or "",
+        state,
+        cwd=payload.get("cwd"),
+        hook_event=payload.get("hook_event_name"),
+        now=STARTED_AT,
+    )
+    _refresh_light()
 
 
 def _command_clear(args):
