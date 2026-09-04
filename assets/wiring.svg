@@ -1,0 +1,69 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 660 336" width="660" height="336" role="img" aria-label="Wiring diagram: GPIO25, GPIO26 and GPIO27 on an ESP32 DevKit each drive an LED anode through a 220 ohm series resistor; the red, yellow and green cathodes return to the shared ground rail, which is tied to a GND pin on the board.">
+<style>
+.lbl{font:600 13px system-ui,-apple-system,Segoe UI,Roboto,sans-serif;fill:#8b949e}
+.val{font:500 12px system-ui,-apple-system,Segoe UI,Roboto,sans-serif;fill:#8b949e;text-anchor:middle}
+.brd{font:600 15px system-ui,-apple-system,Segoe UI,Roboto,sans-serif;fill:#c9d1d9;text-anchor:middle}
+.cap{font:400 13px system-ui,-apple-system,Segoe UI,Roboto,sans-serif;fill:#8b949e}
+.wire{fill:none;stroke:#8b949e;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
+.house{fill:#22262c;stroke:#3d444d;stroke-width:2}
+.pad{fill:#3d444d}
+.ray{stroke:#8b949e;stroke-width:2;stroke-linecap:round}
+</style>
+<defs><marker id="arw" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 z" fill="#8b949e"/></marker></defs>
+
+<rect x="24" y="50" width="120" height="240" rx="10" class="house"/>
+<text x="84" y="164" class="brd">ESP32</text>
+<text x="84" y="184" class="brd">DevKit</text>
+
+<!-- red, GPIO25 -->
+<rect x="144" y="82" width="16" height="16" class="pad"/>
+<text x="162" y="76" class="lbl">GPIO25</text>
+<path class="wire" d="M160 90 H250"/>
+<polyline class="wire" points="250,90 262,90 268,78 280,102 292,78 304,102 316,78 322,90 334,90"/>
+<text x="292" y="68" class="val">220 Ω</text>
+<path class="wire" d="M334 90 H400"/>
+<path d="M400 74 L400 106 L432 90 Z" fill="#e5484d" stroke="#e5484d" stroke-width="2" stroke-linejoin="round"/>
+<path class="wire" d="M432 72 V108"/>
+<line class="ray" x1="414" y1="66" x2="426" y2="54" marker-end="url(#arw)"/>
+<line class="ray" x1="424" y1="70" x2="436" y2="58" marker-end="url(#arw)"/>
+<path class="wire" d="M432 90 H560"/>
+<text x="470" y="82" class="lbl">red</text>
+
+<!-- yellow, GPIO26 -->
+<rect x="144" y="152" width="16" height="16" class="pad"/>
+<text x="162" y="146" class="lbl">GPIO26</text>
+<path class="wire" d="M160 160 H250"/>
+<polyline class="wire" points="250,160 262,160 268,148 280,172 292,148 304,172 316,148 322,160 334,160"/>
+<text x="292" y="138" class="val">220 Ω</text>
+<path class="wire" d="M334 160 H400"/>
+<path d="M400 144 L400 176 L432 160 Z" fill="#f5c518" stroke="#f5c518" stroke-width="2" stroke-linejoin="round"/>
+<path class="wire" d="M432 142 V178"/>
+<line class="ray" x1="414" y1="136" x2="426" y2="124" marker-end="url(#arw)"/>
+<line class="ray" x1="424" y1="140" x2="436" y2="128" marker-end="url(#arw)"/>
+<path class="wire" d="M432 160 H560"/>
+<text x="470" y="152" class="lbl">yellow</text>
+
+<!-- green, GPIO27 -->
+<rect x="144" y="222" width="16" height="16" class="pad"/>
+<text x="162" y="216" class="lbl">GPIO27</text>
+<path class="wire" d="M160 230 H250"/>
+<polyline class="wire" points="250,230 262,230 268,218 280,242 292,218 304,242 316,218 322,230 334,230"/>
+<text x="292" y="208" class="val">220 Ω</text>
+<path class="wire" d="M334 230 H400"/>
+<path d="M400 214 L400 246 L432 230 Z" fill="#3fb950" stroke="#3fb950" stroke-width="2" stroke-linejoin="round"/>
+<path class="wire" d="M432 212 V248"/>
+<line class="ray" x1="414" y1="206" x2="426" y2="194" marker-end="url(#arw)"/>
+<line class="ray" x1="424" y1="210" x2="436" y2="198" marker-end="url(#arw)"/>
+<path class="wire" d="M432 230 H560"/>
+<text x="470" y="222" class="lbl">green</text>
+
+<!-- ground rail -->
+<rect x="144" y="262" width="16" height="16" class="pad"/>
+<text x="162" y="256" class="lbl">GND</text>
+<path class="wire" d="M160 270 H560"/>
+<path class="wire" d="M560 90 V270"/>
+<circle cx="560" cy="270" r="4" fill="#8b949e"/>
+<path class="wire" d="M544 280 H576 M549 288 H571 M554 296 H566"/>
+
+<text x="24" y="324" class="cap">Anode to the GPIO through the resistor; cathode — the short leg, on the flattened side of the rim — to ground.</text>
+</svg>

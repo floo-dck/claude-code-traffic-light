@@ -109,7 +109,16 @@ GPIO26 ──[220Ω]──▶|── GND   (yellow)
 GPIO27 ──[220Ω]──▶|── GND   (green)
 ```
 
+![Wiring diagram: GPIO25, 26 and 27 each drive an LED anode through a 220 ohm series resistor, with the red, yellow and green cathodes returning to a shared ground rail](assets/wiring.svg)
+
 An ESP32 pin sources only about 12 mA, so the resistor is not optional.
+
+On a breadboard, straddle the module across the centre channel and run a jumper
+from a `GND` pin to the blue rail. The module body covers rows b to i, so row a
+is the only hole of a pin column you can still reach:
+
+![Breadboard layout: the ESP32 DevKit straddles the centre channel with its headers in rows b and j, a jumper ties a board GND pin to the lower blue rail, and GPIO25, 26 and 27 each reach a free column through a 220 ohm resistor whose column carries the LED anode in row a](assets/breadboard.svg)
+
 Reset the board: red, yellow and green light for 200 ms each in turn. Any
 colour missing from that sweep is a wiring fault on that leg.
 
