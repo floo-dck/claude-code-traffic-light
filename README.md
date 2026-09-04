@@ -74,8 +74,13 @@ the purity.
 2. Flash the firmware:
 
    ```bash
-   .venv\Scripts\python.exe -m platformio run --project-dir firmware --target upload
+   .venv\Scripts\python.exe -m platformio run --project-dir firmware -e esp32dev --target upload
    ```
+
+   > Keep the `-e esp32dev`. Two environments are defined, and without it
+   > PlatformIO flashes both one after the other, leaving the board running the
+   > common-anode build on pins 18/19/21. Pass `-e esp32dev_common_anode`
+   > instead if that is the board you have.
 
    > ⚠️ Hold the BOOT button through `Connecting....` and release it once the
    > chip is identified. This board's auto-program circuit does not pull GPIO0

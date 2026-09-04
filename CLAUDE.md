@@ -29,8 +29,13 @@ All host commands assume the repo-root venv (`py -3.11 -m venv .venv`):
 # chip in download mode and nothing answers on serial — this board's
 # auto-program circuit does not pull GPIO0 low, so upload fails with
 # "Wrong boot mode detected (0x13)" otherwise)
+#
+# -e is not optional on upload: platformio.ini defines two environments, and
+# without it PlatformIO flashes both in turn, so the chip ends up running
+# esp32dev_common_anode - pins 18/19/21, inverted - and LEDs on the default
+# pins stay dark while the onboard LED still works.
 .venv\Scripts\python.exe -m platformio run --project-dir firmware
-.venv\Scripts\python.exe -m platformio run --project-dir firmware --target upload
+.venv\Scripts\python.exe -m platformio run --project-dir firmware -e esp32dev --target upload
 
 # Hooks (read at startup — restart Claude Code afterwards)
 .venv\Scripts\python.exe host\install_hooks.py
