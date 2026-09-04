@@ -15,6 +15,59 @@ whether it is still working, waiting on you, or done.
 | 🟢  | Idle: the turn is finished                    |
 | ⚫  | No live session                               |
 
+## 🚦 When each colour shows
+
+Yellow is reserved for "you are needed": a question you have to answer, and
+nothing else. Both edges are driven by the event that raises the prompt, so
+the light turns the moment the prompt appears and turns back the moment you
+answer it.
+
+| Situation                                        | LED | Raised by / cleared by                       |
+| ------------------------------------------------ | --- | -------------------------------------------- |
+| You send a prompt; Claude thinks or runs a tool   | 🔴  | `UserPromptSubmit`, `PostToolUse`            |
+| Multiple-choice question (`AskUserQuestion`)      | 🟡  | `PreToolUse` → `PostToolUse`                 |
+| Permission prompt (allow / deny a tool)           | 🟡  | `PermissionRequest` → `PostToolUse` / `PermissionDenied` |
+| MCP server opens an elicitation form              | 🟡  | `Elicitation` → `ElicitationResult`          |
+| The turn ends by asking you something in prose    | 🟡  | `Stop`                                       |
+| The turn ends with a statement                    | 🟢  | `Stop`                                       |
+| Nobody types for a minute after a finished turn   | 🟢  | nothing — `idle_prompt` is not wired up      |
+| Session ends                                      | ⚫  | `SessionEnd`                                 |
+
+That last row is the one worth spelling out: Claude Code's `idle_prompt`
+notification fires 60 s after *every* finished turn with nobody typing.
+Treating it as "blocked" is what used to turn a quiet green light yellow all
+by itself, so the `Notification` hook keeps only the prompt types that have no
+event of their own.
+
+### Asking in prose
+
+A question typed in a message raises no hook at all, so at `Stop` the CLI
+reads Claude's last message and decides for itself. It walks the last lines
+backwards, stepping over option lists and fenced code blocks, and stops at the
+first line that is neither — so the question can sit above what it is about:
+
+~~~text
+Done, all tests pass.                     🟢  a statement ends the turn
+
+Shall I commit this?                      🟡  ends in a question
+
+Which one should I build?
+- Option A: the hook only                 🟡  options are stepped over
+- Option B: the hook and its test
+
+Does this look right?
+```diff                                   🟡  code blocks are stepped over
+-    for line in reversed(lines):
+```
+
+Done:
+- fixed the bug                           🟢  a report that ends in a list
+- added a test
+~~~
+
+The walk gives up after twelve lines, and a whole code block counts as one, so
+a question buried above a long summary does not keep the light yellow.
+
 ## 💡 How it works
 
 ```
@@ -40,14 +93,11 @@ whether it is still working, waiting on you, or done.
 └──────────────┘
 ```
 
-Yellow is driven by the events that mean the user is genuinely needed:
-`PreToolUse` on `AskUserQuestion` and `PermissionRequest` fire the moment the
-prompt appears, and `PostToolUse` clears it the moment it is answered. The
-`Notification` hook keeps only the prompt types that have no event of their own
-— `idle_prompt` is deliberately excluded, because it fires 60 s after *every*
-finished turn and would turn a quiet green light yellow on its own. At `Stop`
-the CLI reads Claude's last message and stays yellow when the turn ended in a
-question. Every hook but `SessionEnd` is `async`, so none can delay the agent.
+Every hook but `SessionEnd` carries `"async": true`, so none of them can delay
+the agent — that is what makes a hook on every tool call affordable, and a
+tool call is the only signal that an approved permission prompt was answered.
+`SessionEnd` stays synchronous, because an async hook is killed at teardown
+and its session file would outlive the session.
 
 Each hook fires the CLI, which writes **only its own session's file** — that is
 what removes cross-process locking on Windows, where two Claude Code windows
